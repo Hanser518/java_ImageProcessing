@@ -1,5 +1,3 @@
-package IMAGE;
-
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -293,32 +291,32 @@ public class IMG {
     }
 
     public Pixel[][] Sobel(Pixel[][] pixel) throws IOException {
-        Pixel[][] img = pixel;
-        int width = img.length;
-        int height = img[0].length;
-        Sobel_X0(img);
-        Sobel_Y0(img);
-        // Sobel_X1(img);
-        // Sobel_Y1(img);
-        Pixel[][] sobelX = imgCache.get("SobelX0");
-        Pixel[][] sobelY = imgCache.get("SobelY0");
-        // Pixel[][] sobelX1 = imgCache.get("SobelX1");
-        // Pixel[][] sobelY1 = imgCache.get("SobelY1");
+        int width = pixel.length;
+        int height = pixel[0].length;
+        Pixel[][] img_fill = fill(pixel,1, 1);
+        int[][] kernel_x = {
+                {1, 0, -1},
+                {2, 0, -2},
+                {1, 0, -1}
+        };
+        int[][] kernel_y = {
+                {1, 2, 1},
+                {0, 0, 0},
+                {-1, -2, -1}
+        };
+        Pixel[][] sobelX = Get_Sub(img_fill, kernel_x);
+        Pixel[][] sobelY = Get_Sub(img_fill, kernel_y);
         Pixel[][] result = new Pixel[width][height];
         for(int i = 0; i < width; i++){
             for(int j = 0; j < height; j++){
                 result[i][j] = new Pixel();
-                result[i][j].r = (sobelX[i][j].r + sobelY[i][j].r) / 2; // sobelX1[i][j].r + sobelY1[i][j].r) / 3;
-                result[i][j].g = (sobelX[i][j].g + sobelY[i][j].g) / 2; // sobelX1[i][j].g + sobelY1[i][j].g) / 3;
-                result[i][j].b = (sobelX[i][j].b + sobelY[i][j].b) / 2; // sobelX1[i][j].b + sobelY1[i][j].b) / 3;
+                result[i][j].r = (int) Math.sqrt(sobelX[i][j].r * sobelX[i][j].r + sobelY[i][j].r * sobelY[i][j].r);
+                result[i][j].g = (int) Math.sqrt(sobelX[i][j].g * sobelX[i][j].g + sobelY[i][j].g * sobelY[i][j].g);
+                result[i][j].b = (int) Math.sqrt(sobelX[i][j].b * sobelX[i][j].b + sobelY[i][j].b * sobelY[i][j].b);
                 result[i][j].calcuG();
             }
         }
         addIMG("Sobel", result);
-        removeIMG("SobelX0");
-        removeIMG("SobelY0");
-        // removeIMG("SobelX1");
-        // removeIMG("SobelY1");
         return result;
     }
 
@@ -341,35 +339,23 @@ public class IMG {
         addIMG("SobelX0", result);
     }
 
-    private void Sobel_X1(Pixel[][] img) throws IOException {
-        int width = img.length;
-        int height = img[0].length;
-        Pixel[][] result = new Pixel[width][height];
-        int[][] conV = {
-                {-1, 0, 1},
-                {-2, 0, 2},
-                {-1, 0, 1}
-        };
-        Pixel[][] img_fill = fill(img, 1, 1);
-        // System.out.println(img.length + " " + img_fill.length);
-        for(int i = 0; i < width; i++){
-            for(int j = 0; j < height; j++){
-                result[i][j] = calcuMatrix(img_fill, conV, i, j);
-            }
-        }
-        addIMG("SobelX1", result);
-    }
-
     public Pixel[][] HOG(Pixel[][] img) throws IOException {
         int width = img.length;
         int height = img[0].length;
         Pixel[][] result = new Pixel[width][height];
-        Sobel_X0(img);
-        Sobel_Y0(img);
-        Pixel[][] sobelX = imgCache.get("SobelX0");
-        Pixel[][] sobelY = imgCache.get("SobelY0");
-        imgCache.remove("SobelX0");
-        imgCache.remove("SobelY0");
+        Pixel[][] img_fill = fill(img,1, 1);
+        int[][] kernel_x = {
+                {1, 0, -1},
+                {2, 0, -2},
+                {1, 0, -1}
+        };
+        int[][] kernel_y = {
+                {1, 2, 1},
+                {0, 0, 0},
+                {-1, -2, -1}
+        };
+        Pixel[][] sobelX = Get_Sub(img_fill, kernel_x);
+        Pixel[][] sobelY = Get_Sub(img_fill, kernel_y);
         Pixel[][] mag = new Pixel[width][height];
         for(int i = 0; i < width; i++){
             for(int j = 0; j < height; j++){
@@ -390,7 +376,7 @@ public class IMG {
         double[][] angle = new double[width][height];
         for(int i = 0; i < width; i++){
             for(int j = 0; j < height; j++){
-                angle[i][j] = (Math.atan2(sobelY[i][j].gray, sobelX[i][j].gray) * 180 / Math.PI);
+                angle[i][j] = (Math.atan2(sobelY[i][j].gray, sobelX[i][j].gray) * 360 / Math.PI);
             }
         }
         System.out.println("angle");
@@ -429,24 +415,6 @@ public class IMG {
             }
         }
         addIMG("SobelY0", result);
-    }
-
-    private void Sobel_Y1(Pixel[][] img) throws IOException {
-        int width = img.length;
-        int height = img[0].length;
-        Pixel[][] result = new Pixel[width][height];
-        int[][] conV = {
-                {-1, -2, -1},
-                {0, 0, 0},
-                {1, 2, 1}
-        };
-        Pixel[][] img_fill = fill(img, 1, 1);
-        for(int i = 0; i < width; i++){
-            for(int j = 0; j < height; j++){
-                result[i][j] = calcuMatrix(img_fill, conV, i, j);
-            }
-        }
-        addIMG("SobelY1", result);
     }
 
     // 高斯卷积核计算
@@ -518,28 +486,28 @@ public class IMG {
     }
 
     // LOG算子
-    public Pixel[][] LoG() throws IOException {
+    public Pixel[][] LOG() throws IOException {
         addIMG("raw", this.pixels);
-        return LoG("raw");
+        return LOG("raw");
     }
 
-    public Pixel[][] LoG(String imgName) throws IOException {
+    public Pixel[][] LOG(String imgName) throws IOException {
         if(!imgCache.containsKey(imgName)){
             System.out.println("(IMG.Prewitt)imgName:" + imgName + " is not exist");
             return pixels;
         }
-        return LoG(imgCache.get(imgName));
+        return LOG(imgCache.get(imgName));
     }
 
-    public Pixel[][] LoG(Pixel[][] img) throws IOException {
+    public Pixel[][] LOG(Pixel[][] img) throws IOException {
         int width = img.length;
         int height = img[0].length;
         // Pixel[][] Gas = Gaussian(img, 9);
         Pixel[][] result = new Pixel[width][height];
         int[][] kernel = {
-                {0, 1, 0},
-                {1,-4, 1},
-                {0, 1, 0}
+                {0, 2, 0},
+                {2,-8, 2},
+                {0, 2, 0}
         };
         Pixel[][] img_fill = fill(img, 1, 1);
         for(int i = 0; i < width; i++){
@@ -548,10 +516,184 @@ public class IMG {
                 result[i][j].calcuG();
             }
         }
-        addIMG("LoG", result);
+        addIMG("LOG", result);
         return result;
     }
 
+    // DOG算子
+    public Pixel[][] DOG() throws IOException {
+        addIMG("raw", this.pixels);
+        return DOG("raw");
+        // removeIMG("raw");
+    }
+
+    public Pixel[][] DOG(String imgName) throws IOException {
+        if(!imgCache.containsKey(imgName)){
+            System.out.println("(IMG.DOG)imgName:" + imgName + " is not exist");
+            return pixels;
+        }
+        return DOG(imgCache.get(imgName));
+    }
+
+    public Pixel[][] DOG(Pixel[][] img) throws IOException {
+        int width = img.length;
+        int height = img[0].length;
+        Pixel[][] result = new Pixel[width][height];
+        Pixel[][] img_fill = fill(img, 1, 1);
+        Pixel[][] theta1 = new Pixel[width][height];
+        Pixel[][] theta2 = new Pixel[width][height];
+        Pixel[][] theta3 = new Pixel[width][height];
+        Pixel[][] base = pixels;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                theta1[i][j] = calcuMatrix1(img_fill, getGasKernel(3, 0.5), i, j);
+                theta2[i][j] = calcuMatrix1(img_fill, getGasKernel(3, 1.0), i, j);
+                theta3[i][j] = calcuMatrix1(img_fill, getGasKernel(3, 1.5), i, j);
+            }
+        }
+        Pixel[][] low = deleteMatrix(base, theta3);
+        Pixel[][] media = deleteMatrix(theta3, theta2);
+        Pixel[][] up = deleteMatrix(theta2, theta1);
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                if((media[i][j].gray > low[i][j].gray && media[i][j].gray > up[i][j].gray) || (media[i][j].gray < low[i][j].gray && media[i][j].gray < up[i][j].gray)){
+                    result[i][j] = new Pixel(233,233,233);
+                }else{
+                    result[i][j] = new Pixel(0,0,0);
+                }
+            }
+        }
+        return result;
+    }
+
+    // Canny算子
+    public Pixel[][] Canny(int index1, int index2) throws IOException {
+        addIMG("raw", this.pixels);
+        return Canny("raw", index1, index2);
+    }
+
+    public Pixel[][] Canny(String imgName, int index1, int index2) throws IOException {
+        if(!imgCache.containsKey(imgName)){
+            System.out.println("(IMG.Canny)imgName:" + imgName + " is not exist");
+            return pixels;
+        }
+        return Canny(imgCache.get(imgName), index1, index2);
+    }
+
+    public Pixel[][] Canny(Pixel[][] img, int index1, int index2) throws IOException {
+        int width = img.length;
+        int height = img[0].length;
+        Pixel[][] result = GrayIMG(img);
+        Pixel[][] img_fill = fill(img,1, 1);
+        int[][] kernel_x = {
+                {1, 0, -1},
+                {2, 0, -2},
+                {1, 0, -1}
+        };
+        int[][] kernel_y = {
+                {1, 2, 1},
+                {0, 0, 0},
+                {-1, -2, -1}
+        };
+        Pixel[][] sobelX = Get_Sub(img_fill, kernel_x);
+        Pixel[][] sobelY = Get_Sub(img_fill, kernel_y);
+        Pixel[][] mag = new Pixel[width][height];
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                mag[i][j] = new Pixel();
+                mag[i][j].r = (int)Math.sqrt(sobelX[i][j].r * sobelX[i][j].r + sobelY[i][j].r * sobelY[i][j].r);
+                mag[i][j].g = (int)Math.sqrt(sobelX[i][j].g * sobelX[i][j].g + sobelY[i][j].g * sobelY[i][j].g);
+                mag[i][j].b = (int)Math.sqrt(sobelX[i][j].b * sobelX[i][j].b + sobelY[i][j].b * sobelY[i][j].b);
+                mag[i][j].calcuG();
+                if(mag[i][j].G < 2){
+                    mag[i][j].r = 0;
+                    mag[i][j].g = 0;
+                    mag[i][j].b = 0;
+                    mag[i][j].calcuG();
+                }
+            }
+        }
+        System.out.println("mag");
+        int[][] angle = new int[width][height];
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                angle[i][j] = (int) ((Math.atan2(sobelY[i][j].gray, sobelX[i][j].gray) * 360 / Math.PI) / 45);
+            }
+        }
+        System.out.println("angle");
+        float base = result[0][0].setRank(rank);
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                int locX = 0, locY = 0;
+                switch (angle[i][j]){
+                    case 0:
+                        locX = 1;
+                        break;
+                    case 1:
+                        locX = 1;
+                        locY = 1;
+                        break;
+                    case 2:
+                        locY = 1;
+                        break;
+                    case 3:
+                        locX = -1;
+                        locY = 1;
+                        break;
+                    case 4:
+                        locX = -1;
+                        break;
+                    case 5:
+                        locX = -1;
+                        locY = -1;
+                        break;
+                    case 6:
+                        locY = -1;
+                        break;
+                    case 7:
+                        locX = 1;
+                        locY = -1;
+                }
+                if(i + locX >= 0 && i + locX < width && j + locY >= 0 && j + locY < height){
+                    if(mag[i][j].gray < mag[i + locX][j + locY].gray){
+                        result[i][j] = new Pixel(0,0,0);
+                    }else{
+                        result[i][j] = new Pixel(mag[i][j].gray, mag[i][j].gray, mag[i][j].gray);
+                    }
+                }else{
+                    result[i][j] = new Pixel(mag[i][j].gray, mag[i][j].gray, mag[i][j].gray);
+                }
+                result[i][j].setRank(rank, base);
+                result[i][j].calcuG();
+            }
+        }
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                if(result[i][j].G < index1){
+                    result[i][j] = new Pixel(0,0,0);
+                }else if(result[i][j].G < index2 && result[i][j].G >= index1){
+                    int g = (int) (result[i][j].gray * ((float)(result[i][j].G - index1) / (index2 - index1)));
+                    result[i][j] = new Pixel(g,g,g);
+                    result[i][j].setRank(rank, base);
+                    result[i][j].calcuG();
+                }
+            }
+        }
+        return result;
+    }
+    private Pixel[][] deleteMatrix(Pixel[][] m1, Pixel[][] m2){
+        Pixel[][] result = new Pixel[m1.length][m1[0].length];
+        for(int i = 0; i < m1.length; i++){
+            for(int j = 0; j < m1[0].length; j++){
+                result[i][j] = new Pixel(m1[i][j]);
+                result[i][j].r = result[i][j].r - m2[i][j].r > 0 ? result[i][j].r - m2[i][j].r : 0;
+                result[i][j].g = result[i][j].g - m2[i][j].g > 0 ? result[i][j].g - m2[i][j].g : 0;
+                result[i][j].b = result[i][j].b - m2[i][j].b > 0 ? result[i][j].b - m2[i][j].b : 0;
+                result[i][j].calcuG();
+            }
+        }
+        return result;
+    }
     // Prewitt算子
     public Pixel[][] Prewitt() throws IOException {
         addIMG("raw", this.pixels);
@@ -650,6 +792,7 @@ public class IMG {
         }
         return result;
     }
+    
     // 对输入图像进行锐化
     public Pixel[][] Sharpen() throws IOException {
         addIMG("raw", this.pixels);
@@ -657,6 +800,7 @@ public class IMG {
         // removeIMG("raw");
     }
 
+    // 对输入图像进行锐化
     public Pixel[][] Sharpen(String imgName) throws IOException {
         if(!imgCache.containsKey(imgName)){
             System.out.println("(IMG.Sharpen)imgName:" + imgName + " is not exist");
@@ -665,6 +809,7 @@ public class IMG {
         return Sharpen(imgCache.get(imgName));
     }
 
+    // 对输入图像进行锐化
     public Pixel[][] Sharpen(Pixel[][] img) throws IOException {
         int width = img.length;
         int height = img[0].length;
@@ -685,10 +830,12 @@ public class IMG {
         return result;
     }
 
+    // 调整图像曝光，index为图像阈值，低于阈值的像素点将不被调整
     public Pixel[][] changeExposure(int num) throws IOException {
         return changeExposure(this.pixels, num);
     }
 
+    // 调整图像曝光，index为图像阈值，低于阈值的像素点将不被调整
     public Pixel[][] changeExposure(Pixel[][] img, int num) throws IOException {
         int width = img.length;
         int height = img[0].length;
@@ -712,6 +859,7 @@ public class IMG {
         return result;
     }
 
+    // 调整图像曝光，index为图像阈值，低于阈值的像素点将不被调整
     public Pixel[][] changeExposure(Pixel[][] img, int num, int index) throws IOException {
         int width = img.length;
         int height = img[0].length;
@@ -738,6 +886,7 @@ public class IMG {
         return result;
     }
 
+    // 图像对半拼接
     public Pixel[][] halfGet(Pixel[][] p1, Pixel[][] p2) throws IOException {
         int width = p1.length;
         int height = p1[0].length;
@@ -753,6 +902,7 @@ public class IMG {
         return result;
     }
 
+    // 已废弃，请使用imgEnhance
     public Pixel[][] enhanceIllumination(int index1, int index2) throws IOException {
         int width = this.width;
         int height = this.height;
@@ -763,19 +913,11 @@ public class IMG {
                 int g = pixels[i][j].g;
                 int b = pixels[i][j].b;
                 int G = pixels[i][j].G;
-                float num = (float) rank / (G + 1);
-                // if (G < index1)  num = 2.46F;
-                // else if (G >= index1 && G < index2) num = 1.56F;
-                // System.out.println(Math.sqrt(rank) / (G + 1));
-                // System.out.print(num + ":");
-                if (r * num > 255  || g * num > 255 || b * num > 255){
-                    // 求rgb中的最大值
-                    int x = Math.max(r, g);
-                    x = Math.max(x, b) + 50;
-                    num = (float) (Math.sqrt(rank) / x);
-                    // result[i][j] = new Pixel(r, g, b);
-                    // result[i][j] = new Pixel((int) (r * num), (int) (g * num), (int) (b * num));
-                    // System.out.println((float) rank / G + " " + num);
+                float num = (float) rank / ((G + 1));
+                if(pixels[i][j].gray > index1 && pixels[i][j].gray < index2){
+                    num *= (float) (index2 - pixels[i][j].gray) / (index2 - index1);
+                }else if(pixels[i][j].gray >= index2){
+                    num = 1.0F;
                 }
                 result[i][j] = new Pixel((int) (r * num), (int) (g * num), (int) (b * num));
                 result[i][j].setRank(16, 2.0F);
@@ -786,8 +928,80 @@ public class IMG {
         IMG ne = new IMG("./output/cache/a1.png", 16, false);
         for(int i = 0; i < width; i++){
             for(int j = 0; j < height; j++){
-                if(ne.pixels[i][j].G < pixels[i][j].G)
+                if(ne.pixels[i][j].G < pixels[i][j].G){
+                    int maxP = Math.max(pixels[i][j].r, pixels[i][j].b);
+                    maxP = Math.max(maxP, pixels[i][j].g);
+                    int num = Math.max(250 - maxP, 0);
+                    // double y = (outputMax - outputMin) * (inputMax - x) / (double)(inputMax - inputMin) + outputMin
+                    if(maxP > index2)    num = (int) (num * (double)(255 - maxP) / (255 - index2));
+                    else num = 0;
+                    int r = pixels[i][j].r + num;
+                    int g = pixels[i][j].g + num;
+                    int b = pixels[i][j].b + num;
+                    result[i][j] = new Pixel(r, g, b);
+                    result[i][j].calcuG();
+                }
+            }
+        }
+        result = Median(result, 7);
+        result = Gaussian(result, 21);
+        Pixel[][] sobel = Sobel(GrayIMG());
+        int index = getVally(getGList(sobel));
+        System.out.print(index);
+        for(int i = 0;i < width; i++){
+            for(int j = 0; j < height; j++){
+                if(sobel[i][j].G > Math.max(0, index - 2)){
                     result[i][j] = pixels[i][j];
+                    sobel[i][j] = new Pixel(255, 255, 255);
+                }else{
+                    sobel[i][j] = new Pixel(0, 0, 0);
+                }
+            }
+        }
+        return result;
+    }
+
+    // 获取图像不同G值的数量，0~max
+    public int[] getGList(Pixel[][] img){
+        int width = img.length;
+        int height = img[0].length;
+        int[] result = new int[img[0][0].rank + 1];
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                result[img[i][j].G]++;
+            }
+        }
+        return result;
+    }
+
+    // 忘了写这个是干嘛了
+    public int getVally(int[] list){
+        int vally = list.length - 1;
+        int i = list.length - 1;
+        while(vally > 0){
+            if(list[vally] > list[i]) break;
+            else vally = i;
+            i --;
+        }
+        return vally;
+    }
+
+    // 忘了写这个是干嘛了
+    public Pixel[][] fixColor(Pixel[][] img){
+        int width = img.length;
+        int height = img[0].length;
+        int[][] Kernel = {
+                {1, 1, 1},
+                {1, -5, 1},
+                {1, 1, 1}
+
+        };
+        Pixel[][] result = new Pixel[width][height];
+        Pixel[][] img_fill = fill(img, 1, 1);
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                result[i][j] = calcuMatrix1(img_fill, Kernel, i, j);
+                result[i][j].calcuG();
             }
         }
         return result;
@@ -810,6 +1024,7 @@ public class IMG {
         return result;
     }
 
+    // 通过叠加使图像边缘增强，一般p2是边缘检测的结果
     public Pixel[][] enhanceEdge(Pixel[][] p1, Pixel[][] p2){
         int width = p1.length;
         int height = p1[0].length;
@@ -866,7 +1081,7 @@ public class IMG {
             }
         }
         return result;
-   }
+    }
 
     // 矩阵计算
     private Pixel calcuMatrix(Pixel[][] img, int[][] conV, int x, int y){
@@ -926,6 +1141,7 @@ public class IMG {
         return result;
     }
 
+    // 中值计算
     private Pixel calcuMatrixMedian(Pixel[][] img, int size, int x, int y){
         int r = 0;
         int g = 0;
@@ -960,14 +1176,14 @@ public class IMG {
 
     private Pixel calcuCell(Pixel[][] mag, double[][] angle, int size, int x, int y){
         int[] list = new int[size * size];
-        int[] angleList = new int[9];
+        int[] angleList = new int[8];
         for(int i = 0;i < size;i ++){
             for(int j = 0;j < size;j++){
-                angleList[(int) (angle[i + x][j + y] / 20)] += 1;
+                angleList[(int) (angle[i + x][j + y] / 45)] += 1;
             }
         }
         int max_angle = 0;
-        for(int i = 0;i < 9;i++){
+        for(int i = 0;i < 8;i++){
             if(angleList[i] > angleList[max_angle]){
                 max_angle = i;
             }
@@ -1000,6 +1216,7 @@ public class IMG {
         return result;
     }
 
+    // 切分图像
     public ArrayList<Pixel[][]> splitIMG(Pixel[][] img, int width, int height, int count){
         ArrayList<Pixel[][]> result = new ArrayList<Pixel[][]>();
         Random r = new Random();
@@ -1016,4 +1233,106 @@ public class IMG {
         }
         return result;
     }
+
+    // 弱光图像增强，theta控制增强范围
+    public Pixel[][] imgEnhance(Pixel[][] img, double theta) throws IOException {
+        int width = img.length;
+        int height = img[0].length;
+        Pixel[][] result = new Pixel[width][height];
+        if(theta < 0.5) theta = 0.5;
+
+        int[] G_list = getGList(img);   // 获取图像灰度分布比例
+        int crest;  // 图像最高有效灰度级数
+        int sub_sum = 0;
+        for(crest = G_list.length - 1; crest > 0; crest --){
+            if(G_list[crest] > width * height * 0.05 - sub_sum) break;
+            else sub_sum += G_list[crest];
+        }
+        int trough; // 图像最低有效灰度级数
+        sub_sum = 0;
+        for(trough = 0; trough < crest; trough ++){
+            if(G_list[trough] > width * height * 0.05 - sub_sum) break;
+            else sub_sum += G_list[trough];
+        }
+
+        // 计算获取两个阈值
+        double goldenRatio = 0.618;
+        double threshold1 = (crest - trough) * goldenRatio + trough;
+        double threshold2 = threshold1 * (goldenRatio);
+
+        // 计算阈值所对应的灰度值
+        double[] G_ratio = new double[G_list.length];
+        G_ratio[0] = (double)G_list[0] / (width * height);
+        for(int i = 1;i < G_list.length;i ++){
+            G_ratio[i] = G_ratio[i - 1] + (double)G_list[i] / (width * height);
+        }
+        int index1 = (int) (255 * (G_ratio[(int) threshold1] + (G_ratio[(int) threshold1 + 1] - G_ratio[(int) threshold1]) * (threshold1 - (int) threshold1)));
+        int index2 = (int) (255 * (G_ratio[(int) threshold2] + (G_ratio[(int) threshold2 + 1] - G_ratio[(int) threshold2]) * (threshold2 - (int) threshold2)));
+        System.out.println("Crest:" + crest + "\tTrough:" + trough);
+        System.out.println("Threshold1:" + threshold1 + "\tThreshold2:" + threshold2);
+        System.out.println("Index1:" + index1 + "\tIndex2:" + index2);
+
+        // 对图像进行增幅
+        double maxIllu = theta * Math.pow(crest - trough, 2);
+        System.out.println("maxIllumination:" + maxIllu);
+        double a1 = maxIllu / (1 - 2 * index1 + index1 * index1);
+        double b1 = -a1 * index1 * 2;
+        double c1 = maxIllu - a1 - b1;
+        double top = a1 * index2 * index2 + b1 * index2 + c1;
+        double a2 = (maxIllu - top) / (1 - 2 * index2 + index2 * index2);
+        double b2 = -a2 * index2 * 2;
+        double c2 = maxIllu - a2 - b2 - top;
+        float count = 0;
+        for(int i = 0;i < width;i ++){
+            for(int j = 0;j < height;j ++){
+                int r = img[i][j].r;
+                int g = img[i][j].g;
+                int b = img[i][j].b;
+                int gray = img[i][j].gray;
+                double num = (a1 * gray * gray + b1 * gray + c1) / 255 + 1;     // 第一次增幅
+                if(img[i][j].gray > index1){
+                    num = 1;
+                }
+                if(img[i][j].gray < index2){
+                    double c = (a2 * gray * gray + b2 * gray + c2) / 255 + 1;   // 第二次增幅
+                    num *= c;
+                }
+                double max = Math.max(r, Math.max(g, b));
+                while(max * num > 254.0) num *= (250.0 / (max * num));
+                result[i][j] = new Pixel((int) (r * num), (int) (g * num), (int) (b * num));
+                result[i][j].calcuG();
+                // float percent = count ++ / (width * height);
+                // System.out.printf("\r%.4f",percent);
+            }
+        }
+        System.out.println("____OK");
+        return result;
+    }
+
+    private int[][] transHue(Pixel[][] img) {
+        int width = img.length; int height = img[0].length;
+        double[][] hue = new double[width][height];
+        int[][] result = new int[width][height];
+        for(int i = 0;i < width;i ++){
+            for(int j = 0;j < height;j ++){
+                double r = img[i][j].r;
+                double g = img[i][j].g;
+                double b = img[i][j].b;
+                double max = Math.max(r, Math.max(g, b));
+                double min = Math.min(r, Math.min(g, b));
+                double delta = max - min;
+                if(delta < 20){
+                    hue[i][j] = 0;
+                }else if(max == r){
+                    hue[i][j] = 1;
+                }else if(max == g){
+                    hue[i][j] = 2;
+                }else{
+                    hue[i][j] = 3;
+                }
+            }
+        }
+        return result;
+    }
+
 }
